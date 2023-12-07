@@ -27,16 +27,19 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const refreshInterval = 0.5;
+const sampleInterval = 0.1;
+const maxSampleHistory = 10; // 0.1 * 10 = 1s of history
+const minSpeed = 1024; // 1 KiB/s to bother showing anything
 const speedUnits = [
     "B/s", "KiB/s", "MiB/s", "GiB/s", "TiB/s", "PiB/s", "EiB/s", "ZiB/s", "YiB/s"
 ];
 let lastTotalDownBytes = 0;
 let lastTotalUpBytes = 0;
+let speedHistory = new Array();
 
 const getCurrentNetSpeed = (refreshInterval) => {
     const ByteArray = new TextDecoder(('utf-8'));
-    const speed = {"down": 0, "up": 0};
+    const averageSpeed = {"down": 0, "up": 0};
 
     try {
         const inputFile = Gio.File.new_for_path("/proc/net/dev");
@@ -77,26 +80,41 @@ const getCurrentNetSpeed = (refreshInterval) => {
         if (lastTotalDownBytes === 0) {
             lastTotalDownBytes = totalDownBytes;
         }
+        
         if (lastTotalUpBytes === 0) {
             lastTotalUpBytes = totalUpBytes;
         }
 
-        speed["down"] = (totalDownBytes - lastTotalDownBytes) / refreshInterval;
-        speed["up"] = (totalUpBytes - lastTotalUpBytes) / refreshInterval;
+        const speed = {"down": 0, "up": 0};
+        speed["down"] = (totalDownBytes - lastTotalDownBytes) / sampleInterval;
+        speed["up"] = (totalUpBytes - lastTotalUpBytes) / sampleInterval;
 
         lastTotalDownBytes = totalDownBytes;
         lastTotalUpBytes = totalUpBytes;
+
+        if (speedHistory.length >= maxSampleHistory) {
+            speedHistory.pop();
+        }
+        
+        speedHistory.push(speed);
+        speedHistory.reduce((accumulator, value) => {
+            accumulator["down"] += value;
+            accumulator["up"] += value;
+        }, averageSpeed);
+
+        averageSpeed["down"] /= speedHistory.length;
+        averageSpeed["up"] /= speedHistory.length;
     } catch (e) {
         logError(e);
     }
 
-    return speed;
+    return averageSpeed;
 };
 
 const formatSpeedWithUnit = (amount) => {
     let unitIndex = 0;
-    while (amount >= 1000 && unitIndex < speedUnits.length - 1) {
-        amount /= 1000;
+    while (amount >= 1024 && unitIndex < speedUnits.length - 1) {
+        amount /= 1024;
         ++unitIndex;
     }
 
@@ -104,6 +122,18 @@ const formatSpeedWithUnit = (amount) => {
 };
 
 const toSpeedString = (speed) => {
+    if (speed["down"] < minSpeed && speed["up"] < minSpeed) {
+        return '-';
+    } 
+    
+    if (speed["down"] < minSpeed) {
+        return `↑ ${formatSpeedWithUnit(speed["up"])}`;
+    } 
+    
+    if (speed["up"] < minSpeed) {
+        return `↓ ${formatSpeedWithUnit(speed["down"])}`;
+    }
+    
     return `↓ ${formatSpeedWithUnit(speed["down"])} ↑ ${formatSpeedWithUnit(speed["up"])}`;
 };
 
