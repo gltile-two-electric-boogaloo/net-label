@@ -37,7 +37,7 @@ let lastTotalDownBytes = 0;
 let lastTotalUpBytes = 0;
 let speedHistory = new Array();
 
-const getCurrentNetSpeed = (refreshInterval) => {
+const getCurrentNetSpeed = () => {
     const ByteArray = new TextDecoder(('utf-8'));
     const averageSpeed = {"down": 0, "up": 0};
 
@@ -168,7 +168,7 @@ export default class NetLabelExtension extends Extension {
 
         this._timeout = GLib.timeout_add_seconds(
             GLib.PRIORITY_DEFAULT, sampleInterval, () => {
-                const speed = getCurrentNetSpeed(refreshInterval);
+                const speed = getCurrentNetSpeed(sampleInterval);
                 const text = toSpeedString(speed);
                 this._indicator.setLabelText(text);
 
