@@ -161,15 +161,15 @@ export default class NetLabelExtension extends Extension {
     enable() {
         lastTotalDownBytes = 0;
         lastTotalUpBytes = 0;
+        speedHistory = new Array();
 
         this._indicator = new NetLabel();
         Main.panel.addToStatusArea(this.uuid, this._indicator, 1, 'right');
 
         this._timeout = GLib.timeout_add_seconds(
-            GLib.PRIORITY_DEFAULT, refreshInterval, () => {
+            GLib.PRIORITY_DEFAULT, sampleInterval, () => {
                 const speed = getCurrentNetSpeed(refreshInterval);
                 const text = toSpeedString(speed);
-                log(text);
                 this._indicator.setLabelText(text);
 
                 return GLib.SOURCE_CONTINUE;
