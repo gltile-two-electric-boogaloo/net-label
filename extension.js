@@ -27,9 +27,9 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const refreshInterval = 1;
+const refreshInterval = 0.5;
 const speedUnits = [
-    "B/s", "K/s", "M/s", "G/s", "T/s", "P/s", "E/s", "Z/s", "Y/s"
+    "B/s", "KiB/s", "MiB/s", "GiB/s", "TiB/s", "PiB/s", "EiB/s", "ZiB/s", "YiB/s"
 ];
 let lastTotalDownBytes = 0;
 let lastTotalUpBytes = 0;
@@ -100,7 +100,7 @@ const formatSpeedWithUnit = (amount) => {
         ++unitIndex;
     }
 
-    return `${amount.toFixed(2)} ${speedUnits[unitIndex]}`;
+    return `${amount.toFixed(0)} ${speedUnits[unitIndex]}`;
 };
 
 const toSpeedString = (speed) => {
