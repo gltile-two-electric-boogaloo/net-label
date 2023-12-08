@@ -76,23 +76,23 @@ const getCurrentNetSpeed = () => {
             totalUpBytes += currentInterfaceUpBytes;
         }
 
-	let lastBytes = bytesHistory.shift();
-	bytesHistory.push({
-	    "down": totalDownBytes,
-	    "up": totalUpBytes
-	});
+    let lastBytes = bytesHistory.shift();
+    bytesHistory.push({
+        "down": totalDownBytes,
+        "up": totalUpBytes
+    });
 
-	for (const entry of bytesHistory) {
-	    averageSpeed["down"] += entry["down"] - lastBytes["down"];
-	    averageSpeed["up"] += entry["up"] - lastBytes["up"];
-	    lastBytes = entry;
-	};
-	
-	log(averageSpeed);
-	log(bytesHistory);
+    for (const entry of bytesHistory) {
+        averageSpeed["down"] += entry["down"] - lastBytes["down"];
+        averageSpeed["up"] += entry["up"] - lastBytes["up"];
+        lastBytes = entry;
+    };
+    
+    log(averageSpeed);
+    log(bytesHistory);
 
-	averageSpeed["down"] /= (sampleHistory * sampleInterval * 0.001);
-	averageSpeed["up"] /= (sampleHistory * sampleInterval * 0.001);
+    averageSpeed["down"] /= (sampleHistory * sampleInterval * 0.001);
+    averageSpeed["up"] /= (sampleHistory * sampleInterval * 0.001);
     } catch (e) {
         logError(e);
     }
@@ -118,11 +118,11 @@ const toSpeedString = (speed) => {
     let currentTime = GLib.get_monotonic_time();
 
     if (speed["down"] > minSpeed) {
-	lastSpeedDownAboveThreshold = currentTime;
+    lastSpeedDownAboveThreshold = currentTime;
     }
 
     if (speed["up"] > minSpeed) {
-	lastSpeedUpAboveThreshold = currentTime;
+    lastSpeedUpAboveThreshold = currentTime;
     }
 
     let compTime = currentTime - (hideSeconds * 1000000);
