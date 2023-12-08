@@ -1,7 +1,7 @@
 {
-  "uuid": "net-label@slimani.dev",
+  "uuid": "net-label@gltile.dev",
   "name": "NetLabel",
-  "description": "Shows current download upload speed on panel \nThis extension is a Gnome 45 adaption of Net Speed by AlynxZhou",
+  "description": "Shows current download upload speed on panel",
   "shell-version": [ "45" ],
-  "url": "https://github.com/moh-slimani/net-label"
+  "url": "https://github.com/gltile-two-electric-boogaloo/net-label"
 }
