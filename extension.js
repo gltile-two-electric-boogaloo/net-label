@@ -107,7 +107,7 @@ const formatSpeedWithUnit = (amount) => {
         ++unitIndex;
     }
 
-    return `${amount.toFixed(1)} ${speedUnits[unitIndex]}`;
+    return `${amount.toFixed(0)} ${speedUnits[unitIndex]}`;
 };
 
 // GLib uses microseconds
