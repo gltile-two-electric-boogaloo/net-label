@@ -87,9 +87,6 @@ const getCurrentNetSpeed = () => {
         averageSpeed["up"] += entry["up"] - lastBytes["up"];
         lastBytes = entry;
     };
-    
-    log(averageSpeed);
-    log(bytesHistory);
 
     averageSpeed["down"] /= (sampleHistory * sampleInterval * 0.001);
     averageSpeed["up"] /= (sampleHistory * sampleInterval * 0.001);
