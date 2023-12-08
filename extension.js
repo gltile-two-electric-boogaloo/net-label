@@ -27,15 +27,14 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const sampleInterval = 0.1;
-const maxSampleHistory = 10; // 0.1 * 10 = 1s of history
+const sampleInterval = 100; // 100 ms
+const sampleHistory = 10; // 10 * 100 = 1000 ms (1 s) of history
 const minSpeed = 1024; // 1 KiB/s to bother showing anything
+const hideSeconds = 1 // Hide after this amount of seconds after no activity
 const speedUnits = [
     "B/s", "KiB/s", "MiB/s", "GiB/s", "TiB/s", "PiB/s", "EiB/s", "ZiB/s", "YiB/s"
 ];
-let lastTotalDownBytes = 0;
-let lastTotalUpBytes = 0;
-let speedHistory = new Array();
+let bytesHistory = new Array(sampleHistory).fill(0);
 
 const getCurrentNetSpeed = () => {
     const ByteArray = new TextDecoder(('utf-8'));
@@ -77,33 +76,23 @@ const getCurrentNetSpeed = () => {
             totalUpBytes += currentInterfaceUpBytes;
         }
 
-        if (lastTotalDownBytes === 0) {
-            lastTotalDownBytes = totalDownBytes;
-        }
-        
-        if (lastTotalUpBytes === 0) {
-            lastTotalUpBytes = totalUpBytes;
-        }
+	let lastBytes = bytesHistory.shift();
+	bytesHistory.push({
+	    "down": totalDownBytes,
+	    "up": totalUpBytes
+	});
 
-        const speed = {"down": 0, "up": 0};
-        speed["down"] = (totalDownBytes - lastTotalDownBytes) / sampleInterval;
-        speed["up"] = (totalUpBytes - lastTotalUpBytes) / sampleInterval;
+	for (const entry of bytesHistory) {
+	    averageSpeed["down"] += entry["down"] - lastBytes["down"];
+	    averageSpeed["up"] += entry["up"] - lastBytes["up"];
+	    lastBytes = entry;
+	};
+	
+	log(averageSpeed);
+	log(bytesHistory);
 
-        lastTotalDownBytes = totalDownBytes;
-        lastTotalUpBytes = totalUpBytes;
-
-        if (speedHistory.length >= maxSampleHistory) {
-            speedHistory.pop();
-        }
-        
-        speedHistory.push(speed);
-        speedHistory.reduce((accumulator, value) => {
-            accumulator["down"] += value;
-            accumulator["up"] += value;
-        }, averageSpeed);
-
-        averageSpeed["down"] /= speedHistory.length;
-        averageSpeed["up"] /= speedHistory.length;
+	averageSpeed["down"] /= (sampleHistory * sampleInterval * 0.001);
+	averageSpeed["up"] /= (sampleHistory * sampleInterval * 0.001);
     } catch (e) {
         logError(e);
     }
@@ -118,19 +107,37 @@ const formatSpeedWithUnit = (amount) => {
         ++unitIndex;
     }
 
-    return `${amount.toFixed(0)} ${speedUnits[unitIndex]}`;
+    return `${amount.toFixed(1)} ${speedUnits[unitIndex]}`;
 };
 
+// GLib uses microseconds
+let lastSpeedDownAboveThreshold = GLib.get_monotonic_time();
+let lastSpeedUpAboveThreshold = GLib.get_monotonic_time();
+
 const toSpeedString = (speed) => {
-    if (speed["down"] < minSpeed && speed["up"] < minSpeed) {
-        return '-';
-    } 
+    let currentTime = GLib.get_monotonic_time();
+
+    if (speed["down"] > minSpeed) {
+	lastSpeedDownAboveThreshold = currentTime;
+    }
+
+    if (speed["up"] > minSpeed) {
+	lastSpeedUpAboveThreshold = currentTime;
+    }
+
+    let compTime = currentTime - (hideSeconds * 1000000);
+    let shouldHideDown = lastSpeedDownAboveThreshold < compTime;
+    let shouldHideUp = lastSpeedDownAboveThreshold < compTime;
+
+    if (shouldHideDown && shouldHideUp) {
+        return '↑↓';
+    }
     
-    if (speed["down"] < minSpeed) {
+    if (shouldHideDown) {
         return `↑ ${formatSpeedWithUnit(speed["up"])}`;
     } 
     
-    if (speed["up"] < minSpeed) {
+    if (shouldHideUp) {
         return `↓ ${formatSpeedWithUnit(speed["down"])}`;
     }
     
@@ -159,16 +166,14 @@ class NetLabel extends PanelMenu.Button {
 
 export default class NetLabelExtension extends Extension {
     enable() {
-        lastTotalDownBytes = 0;
-        lastTotalUpBytes = 0;
-        speedHistory = new Array();
+        bytesHistory = new Array(sampleHistory).fill(0);
 
         this._indicator = new NetLabel();
         Main.panel.addToStatusArea(this.uuid, this._indicator, 1, 'right');
 
-        this._timeout = GLib.timeout_add_seconds(
+        this._timeout = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT, sampleInterval, () => {
-                const speed = getCurrentNetSpeed(sampleInterval);
+                const speed = getCurrentNetSpeed();
                 const text = toSpeedString(speed);
                 this._indicator.setLabelText(text);
 
