@@ -2,6 +2,6 @@
   "uuid": "net-label@gltile.dev",
   "name": "NetLabel",
   "description": "Shows current and download upload speed on panel",
-  "shell-version": [ "45" ],
+  "shell-version": [ "45", "46" ],
   "url": "https://github.com/gltile-two-electric-boogaloo/net-label"
 }
